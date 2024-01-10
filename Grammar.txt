@@ -1,0 +1,18 @@
+P funcBody 
+funcBody { codeblock }
+code decl
+code assign
+assign id = E ;
+E E + E
+E id
+E F * F
+F ( E )
+F id
+decl type id ;
+type float
+type int
+codeblock code codeblock
+codeblock code
+code internalCMD
+internalCMD print id ;
+E literal

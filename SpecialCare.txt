@@ -1,0 +1,19 @@
+struct AllItems4NonT
+// Only items for nonTerminals. Needs an index association function. 
+// ----------
+//  Change in the new version. This inconvenience disappears.
+// Now using general symbol index
+
+Working Flow
+
+parsing --> lexical --> AST
+
+
+Symbols.txt
+0 - $
+1 - P
+2 - id
+3 - literal
+
+Grammar.txt
+0 - P something
