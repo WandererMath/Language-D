@@ -16,3 +16,5 @@ codeblock code
 code internalCMD
 internalCMD print id ;
 E literal
+F literal
+F F * F
