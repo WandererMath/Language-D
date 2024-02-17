@@ -2,7 +2,7 @@
 I created my programming language. 
 
 
-To compile the compiler (main) and compiler ex1.d by compiler main and link and run ex1:
+To compile the compiler (main) and compile ex1.d by the compiler main, and then link and run ex1:
 ```
 cmd
 c.bat
