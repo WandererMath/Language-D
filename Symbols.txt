@@ -8,6 +8,9 @@ F   0
 )   1
 +   1
 *   1
+-   1
+/   1
+%   1
 =   1
 code    0
 assign  0
@@ -17,8 +20,13 @@ type    0
 int 1
 float   1
 codeblock 0
-print 1
 {   1
 }   1
 funcBody    0
-internalCMD 0
+func    0
+funcs   0
+paras   0
+para    0
+,   1
+funCall 0
+ids  0

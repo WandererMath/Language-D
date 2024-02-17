@@ -1,20 +1,35 @@
-P funcBody 
+P funcs
 funcBody { codeblock }
 code decl
 code assign
+code funCall
+ids ids , id
+ids id
+funCall id ( ids ) ;
+funCall id ( ) ;
 assign id = E ;
 E E + E
+E E - E
 E id
 E F * F
+E F / F
+E F % F
 F ( E )
 F id
+F F * F
+F F / F
+F F % F
+E literal
+F literal
 decl type id ;
 type float
 type int
 codeblock code codeblock
 codeblock code
-code internalCMD
-internalCMD print id ;
-E literal
-F literal
-F F * F
+func type id ( ) funcBody
+func type id ( paras ) funcBody
+paras para , paras
+paras para
+para type id
+funcs func
+funcs func funcs

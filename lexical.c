@@ -18,7 +18,7 @@ id  1
 literal 1
 */
 
-char single_tokens[]={'+', '*', '(', ')', ';', '=', '{', '}'};
+char single_tokens[]={'+', '*', '(', ')', ';', '=', '{', '}', ','};
 struct TokenizedCode* t_code;
 
 struct Token{
@@ -33,7 +33,7 @@ struct AST{
     int numChild;
     struct AST* childs[MAX_TREE_CHILD];
 
-    int numExpand; //not used
+    //int numExpand; //not used
 
 };
 
@@ -134,15 +134,15 @@ int isSingleToken(char c){
 
 void printToken(const struct Token* t){
     if (t->token==2){
-        printf("IDENTIFIER %s\t", t->name);
+        printf("IDENTIFIER %s\t\n", t->name);
         return;
     }
     if(t->token==3){
-        printf("LITERAL %s\t", t->name);
+        printf("LITERAL %s\t\n", t->name);
         return;
     }
     else{
-        printf("%s\t",symbols->allSymbols[t->token].symbol);
+        printf("%s\t\n",symbols->allSymbols[t->token].symbol);
     }
 }
 
