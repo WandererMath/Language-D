@@ -49,10 +49,10 @@ int id2int(struct idList* list, char* id){
 int var2int(char* name, struct idList* IDs, struct idList* paras){
     int X;
     X=id2int(paras, name)+1;
-    if(X!=-1)
-        return X*4+4;
+    if(X!=0)
+        return X*4;
     X=id2int(IDs, name)+1;
-    if(X!=-1)
+    if(X!=0)
         return -X*4;
     printf("Variable Name %s NOT DEFINED\n", name);
     return -1;
@@ -84,7 +84,7 @@ int string2int(char* name){
     }
 }
 
-void evaluate(struct AST* E, struct idList* IDs, int r/*0 EAX, 1 EBX*/){
+void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 EAX, 1 EBX*/){
     int literal=string2int("literal");
     int identifier=string2int("id");
     int mul=string2int("*");
@@ -92,6 +92,14 @@ void evaluate(struct AST* E, struct idList* IDs, int r/*0 EAX, 1 EBX*/){
     int leftp=string2int("(");
     int var;
     int op;
+    char* regs[]={"EAX", "EBX"};
+    char* regs_r[]={"EBX", "EAX"};
+
+    /*
+        EBP constant all the time
+        --Preserving EAX or EBX
+    */
+
 
     //Preserving Data
     if(r==0)
@@ -108,18 +116,14 @@ void evaluate(struct AST* E, struct idList* IDs, int r/*0 EAX, 1 EBX*/){
     if (E->numChild==1){
         if(E->childs[0]->node->token==literal){
             //printf("%s\n",E->childs[0]->node->name);
-            if(r==0)
-                fprintf(f, "\tMOV EAX, %s\n", E->childs[0]->node->name);
-            else
-                fprintf(f, "\tMOV EBX, %s\n", E->childs[0]->node->name);
+            fprintf(f, "\tMOV %s, %s\n", regs[r],E->childs[0]->node->name);
         }
         if(E->childs[0]->node->token==identifier){
-            var=id2int(IDs, E->childs[0]->node->name);
-            var=var*4+4;
-            if(r==0)
-                fprintf(f, "\tMOV EAX, DWORD [ECX+%d]\n", var);
+            var=var2int(E->childs[0]->node->name, IDs, paras);
+            if(var>0)
+                fprintf(f, "\tMOV %s, DWORD [EBP+%d]\n",regs[r], var);
             else 
-                fprintf(f, "\tMOV EBX, DWORD [ECX+%d]\n", var);
+                fprintf(f, "\tMOV %s, DWORD [EBP%d]\n",regs[r], var);
         }    
     }
 
@@ -127,8 +131,8 @@ void evaluate(struct AST* E, struct idList* IDs, int r/*0 EAX, 1 EBX*/){
     else{
 
         op=E->childs[1]->node->token;
-        evaluate(E->childs[0], IDs, 0);
-        evaluate(E->childs[2], IDs, 1);
+        evaluate(E->childs[0], IDs,paras, 0);
+        evaluate(E->childs[2], IDs,paras, 1);
         if(op==plus){
             if(r==0)
                 fprintf(f,"\tADD EAX, EBX\n");
@@ -155,12 +159,19 @@ void evaluate(struct AST* E, struct idList* IDs, int r/*0 EAX, 1 EBX*/){
 void asg(struct AST* assign, struct idList* IDs, struct idList* paras){
     int literal=string2int("literal");
     int identifier=string2int("id");
-    int id=id2int(IDs,assign->childs[0]->node->name);
-    //Getting Space for Local Variables A, B
+    int var=var2int(assign->childs[0]->node->name, IDs, paras);
+
+    /*
+        {Evaluation Code}
+        Save result in EAX
+        MOV [VAR], EBX 
+    */
     
-    fprintf(f,"\tMOV ECX, ESP\n");
-    evaluate(assign->childs[2], IDs, 0);
-    fprintf(f,"\tMOV DWORD [ESP+%d], EAX\n", 4*id+4);
+    evaluate(assign->childs[2], IDs,paras, 0);
+    if(var>0)
+        fprintf(f,"\tMOV DWORD [EBP+%d], EAX\n", var);
+    else
+        fprintf(f,"\tMOV DWORD [EBP%d], EAX\n", var);
 }
 
 struct idList* decl(struct AST* decl, struct idList* IDs){
@@ -177,24 +188,29 @@ struct idList* decl(struct AST* decl, struct idList* IDs){
 
 void funCall(struct AST* call, struct idList* IDs, struct idList* paras){
     // FILO
-    // PUSH paras
     // PUSH EBP
+    // PUSH paras
+    
     // CALL
-    // POP EBP
     // POP paras
+    // POP EBP
+    
 
     /*
 
         Var2                <-[ESP]
         Var1                <-[EBP-4]
         Return Address      <-[EBP now]
-        EBP                 <-
-        Para1               <-[EBP+8]
+        Para1               <-[EBP+4]
         Para2
         Para3
+        EBP
     */
     int ids=string2int("ids");
     int id=string2int("id");
+
+    // Push EBP
+    fprintf(f, "\tPUSH EBP\n");
 
     // Push paras
     char* name;
@@ -223,19 +239,19 @@ void funCall(struct AST* call, struct idList* IDs, struct idList* paras){
         else
             fprintf(f, "\tPUSH DWORD [EBP%d]\n", d);
     }
+    
+    
 
     // CALL
     char* funcName=call->childs[0]->node->name;
     fprintf(f, "\tCALL _%s\n", funcName);
 
-    // Push EBP
-    fprintf(f, "\tPUSH EBP\n");
-
-    // Pop EBP
-    fprintf(f, "\tPOP EBP\n");
 
     // Pop paras
     fprintf(f, "\tADD ESP, %d\n", count*4);
+
+    // Pop EBP
+    fprintf(f, "\tPOP EBP\n");
 }
 
 
@@ -295,7 +311,20 @@ void code_block(struct AST* block, struct idList* IDs, struct idList* paras){
     //printIDList(IDs);
 }
 
-
+int code_block_get_N_local_vars(struct AST* block){
+    int c=0;
+    struct AST* code;
+    int decl=string2int("decl");
+    while(1){
+        code=block->childs[0];
+        if(code->childs[0]->node->token==decl)
+            c++;
+        if(block->numChild==1)
+            break;
+        block=block->childs[1];
+    }
+    return c;
+}
 
 
 void func(struct AST* func){
@@ -321,11 +350,14 @@ void func(struct AST* func){
         ADD ESP, ...
         RET
     */
-    int N1=getN_IDLIST(paras)*4;
+
+    int N1=code_block_get_N_local_vars(func->childs[N-1]->childs[1])*4;
     fprintf(f,"\tMOV EBP, ESP\n");
+
+    //Creating Local Vars
     fprintf(f,"\tSUB ESP, %d\n", N1);
-    
     code_block(func->childs[N-1]->childs[1], NULL, paras);
+    //Destroying Local Vars
     fprintf(f,"\tADD ESP, %d\n", N1);
     if(!flag)
         fprintf(f,"\tRET\n");

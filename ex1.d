@@ -1,6 +1,6 @@
 int play(int x, int y){
     int t;
-    t=x+y;
+    t=y*(x+y);
     print(t);
 }
 
