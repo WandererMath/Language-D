@@ -1,4 +1,4 @@
-rem gcc -c -o print.o -m32 print.c
+gcc -c -o print.o -m32 print.c
 
 gcc -o main main.c
 main
