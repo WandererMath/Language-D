@@ -1,7 +1,0 @@
-Symbols.txt, Grammar.txt are needed at runtime. 
-
-To run:
-./main $NAME_OF_YOUR_SOURCE_FILE
-
-For example:
-./main hw.d
