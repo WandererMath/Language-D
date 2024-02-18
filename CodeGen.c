@@ -92,6 +92,7 @@ void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 E
     int leftp=string2int("(");
     int var;
     int op;
+    int flag;
     char* regs[]={"EAX", "EBX"};
     char* regs_r[]={"EBX", "EAX"};
 
@@ -106,7 +107,8 @@ void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 E
         fprintf(f, "\tPUSH EBX\n");
     else
         fprintf(f, "\tPUSH EAX\n");
-    
+L1:
+    flag=1; 
     //Case for (E)
     if(E->childs[0]->node->token==leftp){
         E=E->childs[1];
@@ -117,13 +119,19 @@ void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 E
         if(E->childs[0]->node->token==literal){
             //printf("%s\n",E->childs[0]->node->name);
             fprintf(f, "\tMOV %s, %s\n", regs[r],E->childs[0]->node->name);
+            flag=0;
         }
         if(E->childs[0]->node->token==identifier){
             var=var2int(E->childs[0]->node->name, IDs, paras);
+            flag=0;
             if(var>0)
                 fprintf(f, "\tMOV %s, DWORD [EBP+%d]\n",regs[r], var);
             else 
                 fprintf(f, "\tMOV %s, DWORD [EBP%d]\n",regs[r], var);
+        }
+        if(flag){
+            E=E->childs[0];
+            goto L1;
         }    
     }
 

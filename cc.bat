@@ -1,5 +1,7 @@
+gcc -c -o print.o -m32 print.c
+
+gcc -o main main.c
 main %1.d
 nasm -f elf32 %1.asm -o %1.o
 gcc print.o %1.o -o %1 -m32
-del %1.o
 %1

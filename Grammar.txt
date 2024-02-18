@@ -8,19 +8,14 @@ ids id
 funCall id ( ids ) ;
 funCall id ( ) ;
 assign id = E ;
-E E + E
-E E - E
-E id
-E F * F
-E F / F
-E F % F
+E E + T
+E T
+T T * F
+T F
+F id
+F literal
 F ( E )
 F id
-F F * F
-F F / F
-F F % F
-E literal
-F literal
 decl type id ;
 type float
 type int
@@ -33,3 +28,9 @@ paras para
 para type id
 funcs func
 funcs func funcs
+code control
+control if ( condition ) { codeblock }
+control while ( condition ) { codeblock }
+condition id < id
+condition id < literal
+condition literal < id
