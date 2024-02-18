@@ -6,6 +6,6 @@ Automatically building LALR grammar parsing table from Grammars defined in text 
 To compile the compiler (main) and compile ex1.d by the compiler main, and then link and run ex1:
 ```
 cmd
-cc.bat ex1
+cc.bat fib
 ```
 In development. Features to be implemented.
