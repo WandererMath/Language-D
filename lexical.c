@@ -18,7 +18,7 @@ id  1
 literal 1
 */
 
-char single_tokens[]={'+', '*', '(', ')', ';', '=', '{', '}', ','};
+char single_tokens[]={'+', '*', '(', ')', ';', '=', '{', '}', ',', '<'};
 struct TokenizedCode* t_code;
 
 struct Token{
