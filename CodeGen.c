@@ -4,8 +4,10 @@
 #include "AST.c"
 
 #define WIN32 1
+#define ACCESS ->node->token
 
 FILE* f;
+int L_count=0;
 
 struct idList{
     int id; // Starting from 0
@@ -82,6 +84,21 @@ int string2int(char* name){
         if(strcmp(name, symbols->allSymbols[i].symbol)==0)
             return i;
     }
+}
+
+char* var2mem(char* name, struct idList* IDs, struct idList* paras){
+    char* buffer=malloc(100);
+    int d=var2int(name, IDs, paras);
+    if(d==-1){
+        return name;
+    }
+    if (d>0)
+        sprintf(buffer, "DWORD [EBP+%d]", d);
+    else{
+        sprintf(buffer, "DWORD [EBP%d]", d);
+    }
+    printf("%s\n", buffer);
+    return buffer;
 }
 
 void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 EAX, 1 EBX*/){
@@ -262,6 +279,52 @@ void funCall(struct AST* call, struct idList* IDs, struct idList* paras){
     fprintf(f, "\tPOP EBP\n");
 }
 
+int condition(struct AST* cdt, struct idList* IDs, struct idList* paras){
+    //printAST(cdt);
+    int LESST=string2int("<");
+    char* var1=var2mem(cdt->childs[0]->node->name, IDs, paras);
+    char* var2=var2mem(cdt->childs[2]->node->name, IDs, paras);
+    struct AST* cmp=cdt->childs[1];
+    fprintf(f, "L%d:\n", L_count);
+    fprintf(f, "\tMOV EAX, %s\n", var1);
+    fprintf(f, "\tCMP EAX, %s\n", var2);
+    if(cmp->childs[0]ACCESS==LESST){
+        //jmp to end if false
+        fprintf(f, "\tJGE L%d\n", L_count+3);
+        return ;
+    }
+    
+}
+
+void control(struct AST* crl, struct idList* IDs, struct idList* paras){
+    int T_IF=string2int("if");
+    int T_WHILE=string2int("while");
+    condition(crl->childs[2], IDs, paras);
+    /*
+    L_count:
+        cmp
+    Above implemented in condition function
+    --------------------
+    L_count+1:(jmp for true)
+    L_count+2:(jmp for false)
+    L_count+3:(end)
+    */
+    if(crl->childs[0]ACCESS==T_IF){
+        fprintf(f, "L%d:\n", L_count+1);
+        code_block(crl->childs[5], IDs, paras);
+        fprintf(f, "L%d:\n", L_count+2);
+    }
+    if(crl->childs[0]ACCESS==T_WHILE){
+        //true
+        fprintf(f, "L%d:\n", L_count+1);
+        code_block(crl->childs[5], IDs, paras);
+        fprintf(f, "JMP L%d\n", L_count);
+        //false
+        fprintf(f, "L%d:\n", L_count+2);
+    }
+    fprintf(f, "L%d:\n", L_count+3);
+    L_count+=4;
+}
 
 
 struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
@@ -272,6 +335,7 @@ struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
     int ASG=string2int("assign");
     int DECL=string2int("decl");
     int CALL=string2int("funCall");
+    int CONTROL=string2int("control");
     
     code=code->childs[0];
     int what=code->node->token;
@@ -284,6 +348,9 @@ struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
     }
     if(what==DECL){
         IDs=decl(code, IDs);
+    }
+    if(what==CONTROL){
+        control(code, IDs, paras);
     }
     return IDs;
 }

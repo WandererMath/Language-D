@@ -31,6 +31,7 @@ funcs func funcs
 code control
 control if ( condition ) { codeblock }
 control while ( condition ) { codeblock }
-condition id < id
-condition id < literal
-condition literal < id
+condition id cmp id
+condition id cmp literal
+condition literal cmp id
+cmp <

@@ -8,6 +8,20 @@ int main(){
     int brenda;
     int lucy;
     brenda=5;
-    lucy=7;
+    lucy=17;
     play ( brenda , lucy);
+    if(lucy<7){
+        print(lucy);
+    }
+    if(brenda<7){
+        brenda=brenda+1;
+        print(brenda);
+    }
+    while(brenda<lucy){
+        brenda=brenda+1;
+        print(brenda);
+    }
+    if(2<lucy){
+        print(lucy);
+    }
 }
