@@ -30,3 +30,9 @@ para    0
 ,   1
 funCall 0
 ids  0
+while   1
+if  1
+<   1
+control 0
+condition   0
+T   0
