@@ -2,13 +2,14 @@ P funcs
 funcBody { codeblock }
 code decl
 code assign
-code funCall
+code funCall ;
 ids ids , id
 ids id
-funCall id ( ids ) ;
-funCall id ( ) ;
+funCall id ( ids )
+funCall id ( )
 assign id = E ;
 E E + T
+E E - T
 E T
 T T * F
 T F
@@ -35,3 +36,6 @@ condition id cmp id
 condition id cmp literal
 condition literal cmp id
 cmp <
+code ret ;
+ret return E
+F funCall

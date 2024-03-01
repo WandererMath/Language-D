@@ -37,3 +37,5 @@ control 0
 condition   0
 T   0
 cmp 0
+ret 0
+return  1

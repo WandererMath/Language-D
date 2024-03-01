@@ -23,6 +23,17 @@ struct idList* initIDList(char* name){
     return myTable;
 }
 
+int get_N(struct idList* ids){
+    int r=0;
+    while(ids!=NULL){
+        r++;
+        ids=ids->next;
+    }
+    return r;
+}
+
+void funCall(struct AST *call, struct idList *IDs, struct idList *paras);
+
 void appendID(struct idList* list,char* name){
     struct idList* next=initIDList(name);
     while(list->next!=NULL)
@@ -71,7 +82,7 @@ int getN_IDLIST(struct idList* list){
 
 void initCodeGen(char* fileName){
     f=fopen(fileName, "w");
-    fprintf(f, "extern _print, _end\nsection .text\n\tglobal _WinMain@16\n");
+    fprintf(f, "extern _print, _input, _end\nsection .text\n\tglobal _WinMain@16\n");
 }
 
 void endCodeGen(){
@@ -101,115 +112,6 @@ char* var2mem(char* name, struct idList* IDs, struct idList* paras){
     return buffer;
 }
 
-void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 EAX, 1 EBX*/){
-    int literal=string2int("literal");
-    int identifier=string2int("id");
-    int mul=string2int("*");
-    int plus=string2int("+");
-    int leftp=string2int("(");
-    int var;
-    int op;
-    int flag;
-    char* regs[]={"EAX", "EBX"};
-    char* regs_r[]={"EBX", "EAX"};
-
-    /*
-        EBP constant all the time
-        --Preserving EAX or EBX
-    */
-
-
-    //Preserving Data
-    if(r==0)
-        fprintf(f, "\tPUSH EBX\n");
-    else
-        fprintf(f, "\tPUSH EAX\n");
-L1:
-    flag=1; 
-    //Case for (E)
-    if(E->childs[0]->node->token==leftp){
-        E=E->childs[1];
-    }
-
-    //Directly getting value
-    if (E->numChild==1){
-        if(E->childs[0]->node->token==literal){
-            //printf("%s\n",E->childs[0]->node->name);
-            fprintf(f, "\tMOV %s, %s\n", regs[r],E->childs[0]->node->name);
-            flag=0;
-        }
-        if(E->childs[0]->node->token==identifier){
-            var=var2int(E->childs[0]->node->name, IDs, paras);
-            flag=0;
-            if(var>0)
-                fprintf(f, "\tMOV %s, DWORD [EBP+%d]\n",regs[r], var);
-            else 
-                fprintf(f, "\tMOV %s, DWORD [EBP%d]\n",regs[r], var);
-        }
-        if(flag){
-            E=E->childs[0];
-            goto L1;
-        }    
-    }
-
-    //Binary Operator Evaluation
-    else{
-
-        op=E->childs[1]->node->token;
-        evaluate(E->childs[0], IDs,paras, 0);
-        evaluate(E->childs[2], IDs,paras, 1);
-        if(op==plus){
-            if(r==0)
-                fprintf(f,"\tADD EAX, EBX\n");
-            else 
-                fprintf(f,"\tADD EBX, EAX\n");
-        }
-        if(op==mul){
-            if(r==0)
-                fprintf(f,"\tIMUL EAX, EBX\n");
-            else 
-                fprintf(f,"\tIMUL EBX, EAX\n");
-        }
-    }
-
-    //Restoring Data
-    if(r==0)
-        fprintf(f, "\tPOP EBX\n");
-    else
-        fprintf(f, "\tPOP EAX\n");
-}
-
-
-
-void asg(struct AST* assign, struct idList* IDs, struct idList* paras){
-    int literal=string2int("literal");
-    int identifier=string2int("id");
-    int var=var2int(assign->childs[0]->node->name, IDs, paras);
-
-    /*
-        {Evaluation Code}
-        Save result in EAX
-        MOV [VAR], EBX 
-    */
-    
-    evaluate(assign->childs[2], IDs,paras, 0);
-    if(var>0)
-        fprintf(f,"\tMOV DWORD [EBP+%d], EAX\n", var);
-    else
-        fprintf(f,"\tMOV DWORD [EBP%d], EAX\n", var);
-}
-
-struct idList* decl(struct AST* decl, struct idList* IDs){
-    int INT=string2int("int");
-    //printIDList(IDs);
-    char* id=decl->childs[1]->node->name;
-    if(IDs==NULL)
-        IDs=initIDList(id);
-    else
-        appendID(IDs, id);
-    
-    return IDs;
-}
 
 void funCall(struct AST* call, struct idList* IDs, struct idList* paras){
     // FILO
@@ -279,9 +181,147 @@ void funCall(struct AST* call, struct idList* IDs, struct idList* paras){
     fprintf(f, "\tPOP EBP\n");
 }
 
+
+
+void evaluate(struct AST* E, struct idList* IDs,struct idList* paras, int r/*0 EAX, 1 EBX*/){
+    int literal=string2int("literal");
+    int identifier=string2int("id");
+    int mul=string2int("*");
+    int plus=string2int("+");
+    int sub=string2int("-");
+    int leftp=string2int("(");
+    int functionCall=string2int("funCall");
+    int var;
+    int op;
+    int flag;
+    char* regs[]={"EAX", "EBX"};
+    char* regs_r[]={"EBX", "EAX"};
+
+    /*
+        EBP constant all the time
+        --Preserving EAX or EBX
+    */
+
+
+    //Preserving Data
+    if(r==0)
+        fprintf(f, "\tPUSH EBX\n");
+    else
+        fprintf(f, "\tPUSH EAX\n");
+L1:
+    flag=1; 
+    // funCall
+    if(E->node->token==functionCall){
+        //Call function
+        if(r==1)
+            fprintf(f,"\tMOV ECX, EAX\n");
+
+        funCall(E, IDs, paras);
+        fprintf(f, "\tMOV %s, EAX\n", regs[r]);
+
+        if(r==1)
+            fprintf(f,"\tMOV EAX, ECX\n");
+        
+        
+        goto L2;
+    }
+
+    //Case for (E)
+    if(E->childs[0]->node->token==leftp){
+        E=E->childs[1];
+    }
+
+    //Directly getting value
+    if (E->numChild==1){
+        if(E->childs[0]->node->token==literal){
+            //printf("%s\n",E->childs[0]->node->name);
+            fprintf(f, "\tMOV %s, %s\n", regs[r],E->childs[0]->node->name);
+            flag=0;
+        }
+        if(E->childs[0]->node->token==identifier){
+            var=var2int(E->childs[0]->node->name, IDs, paras);
+            flag=0;
+            if(var>0)
+                fprintf(f, "\tMOV %s, DWORD [EBP+%d]\n",regs[r], var);
+            else 
+                fprintf(f, "\tMOV %s, DWORD [EBP%d]\n",regs[r], var);
+        }
+        if(flag){
+            E=E->childs[0];
+            goto L1;
+        }    
+    }
+
+    //Binary Operator Evaluation
+    else{
+
+        op=E->childs[1]->node->token;
+        evaluate(E->childs[0], IDs,paras, 0);
+        evaluate(E->childs[2], IDs,paras, 1);
+        if(op==plus){
+            if(r==0)
+                fprintf(f,"\tADD EAX, EBX\n");
+            else 
+                fprintf(f,"\tADD EBX, EAX\n");
+        }
+        if(op==sub){
+            if(r==0)
+                fprintf(f,"\tSUB EAX, EBX\n");
+            else 
+                fprintf(f,"\tSUB EBX, EAX\n");
+        }
+        if(op==mul){
+            if(r==0)
+                fprintf(f,"\tIMUL EAX, EBX\n");
+            else 
+                fprintf(f,"\tIMUL EBX, EAX\n");
+        }
+    }
+L2:
+    //Restoring Data
+    if(r==0)
+        fprintf(f, "\tPOP EBX\n");
+    else
+        fprintf(f, "\tPOP EAX\n");
+}
+
+
+
+void asg(struct AST* assign, struct idList* IDs, struct idList* paras){
+    int literal=string2int("literal");
+    int identifier=string2int("id");
+    int var=var2int(assign->childs[0]->node->name, IDs, paras);
+
+    /*
+        {Evaluation Code}
+        Save result in EAX
+        MOV [VAR], EBX 
+    */
+    
+    evaluate(assign->childs[2], IDs,paras, 0);
+    if(var>0)
+        fprintf(f,"\tMOV DWORD [EBP+%d], EAX\n", var);
+    else
+        fprintf(f,"\tMOV DWORD [EBP%d], EAX\n", var);
+}
+
+struct idList* decl(struct AST* decl, struct idList* IDs){
+    int INT=string2int("int");
+    //printIDList(IDs);
+    char* id=decl->childs[1]->node->name;
+    if(IDs==NULL)
+        IDs=initIDList(id);
+    else
+        appendID(IDs, id);
+    
+    return IDs;
+}
+
+
 int condition(struct AST* cdt, struct idList* IDs, struct idList* paras){
     //printAST(cdt);
     int LESST=string2int("<");
+    int EQ=string2int("=");
     char* var1=var2mem(cdt->childs[0]->node->name, IDs, paras);
     char* var2=var2mem(cdt->childs[2]->node->name, IDs, paras);
     struct AST* cmp=cdt->childs[1];
@@ -291,6 +331,12 @@ int condition(struct AST* cdt, struct idList* IDs, struct idList* paras){
     if(cmp->childs[0]ACCESS==LESST){
         //jmp to end if false
         fprintf(f, "\tJGE L%d\n", L_count+3);
+        return ;
+    }
+    if(cmp->childs[0]ACCESS==EQ){
+        //jmp to end if false
+        fprintf(f, "\tJG L%d\n", L_count+3);
+        fprintf(f, "\tJL L%d\n", L_count+3);
         return ;
     }
     
@@ -326,6 +372,14 @@ void control(struct AST* crl, struct idList* IDs, struct idList* paras){
     L_count+=4;
 }
 
+void ret(struct AST* re, struct idList* IDs, struct idList* paras){
+    //To be implemented
+    //printAST(re);
+    evaluate(re->childs[1], IDs, paras, 0);
+    fprintf(f,"\tADD ESP, %d\n", get_N(IDs)*4);
+    fprintf(f,"\tRET\n");
+    
+}
 
 struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
 /*
@@ -336,6 +390,7 @@ struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
     int DECL=string2int("decl");
     int CALL=string2int("funCall");
     int CONTROL=string2int("control");
+    int RET=string2int("ret");
     
     code=code->childs[0];
     int what=code->node->token;
@@ -351,6 +406,9 @@ struct idList* code(struct AST* code, struct idList* IDs, struct idList* paras){
     }
     if(what==CONTROL){
         control(code, IDs, paras);
+    }
+    if(what==RET){
+        ret(code, IDs, paras);
     }
     return IDs;
 }

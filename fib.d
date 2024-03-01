@@ -13,5 +13,4 @@ int main(){
         print(c);
         N=N+1;
     }
-
 }
