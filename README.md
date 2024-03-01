@@ -9,3 +9,5 @@ cmd
 cc.bat fib
 ```
 In development. Features to be implemented.
+
+Now supports evaluation of arithmatic expressions, control flow, function call, function return value.
